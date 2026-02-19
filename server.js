@@ -12,14 +12,14 @@ app.post("/chat", async (req, res) => {
   try {
     const { message } = req.body;
 
-    if (!message || typeof message !== "string") {
+    if (!message) {
       return res.status(400).json({
-        error: "message must be a non-empty string"
+        error: "Message is required"
       });
     }
 
     const response = await fetch(
-      "https://router.huggingface.co/hf-inference/models/mistralai/Mistral-7B-Instruct-v0.2",
+      "https://api-inference.huggingface.co/models/google/flan-t5-large",
       {
         method: "POST",
         headers: {
@@ -32,22 +32,35 @@ app.post("/chat", async (req, res) => {
       }
     );
 
-    const data = await response.json();
+    const textResponse = await response.text();
 
-    if (!response.ok) {
-      return res.status(response.status).json({
-        error: data.error || "Hugging Face API error"
+    // Safely try JSON parse
+    let data;
+    try {
+      data = JSON.parse(textResponse);
+    } catch {
+      return res.status(500).json({
+        error: textResponse
       });
     }
 
-    const reply = data?.[0]?.generated_text || "No response generated";
+    if (!response.ok) {
+      return res.status(response.status).json({
+        error: data.error || "HF error"
+      });
+    }
+
+    const reply =
+      data?.[0]?.generated_text ||
+      data?.generated_text ||
+      "No response generated";
 
     res.json({ reply });
 
   } catch (error) {
-    console.error("Server Error:", error);
+    console.error(error);
     res.status(500).json({
-      error: error.message || "Internal server error"
+      error: error.message
     });
   }
 });
