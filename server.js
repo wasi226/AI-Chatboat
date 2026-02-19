@@ -27,10 +27,14 @@ app.post("/chat", async (req, res) => {
     });
 
   } catch (error) {
-    res.status(500).json({ error: "Something went wrong" });
+    console.log("ERROR:", error);
+    res.status(500).json({ error: error.message });
   }
 });
 
-app.listen(5000, () => {
-  console.log("Server running on port 5000");
+const PORT = process.env.PORT || 5000;
+
+app.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
 });
+
