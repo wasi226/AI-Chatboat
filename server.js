@@ -1,7 +1,6 @@
 import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
-import { GoogleGenerativeAI } from "@google/generative-ai";
 
 dotenv.config();
 
@@ -9,34 +8,47 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-
 app.post("/chat", async (req, res) => {
   try {
     const { message } = req.body;
 
-    // NEW WORKING MODEL NAME
-    const model = genAI.getGenerativeModel({
-      model: "gemini-1.5-flash"
-    });
+    if (!message || typeof message !== "string") {
+      return res.status(400).json({
+        error: "message must be a non-empty string"
+      });
+    }
 
-    const result = await model.generateContent({
-      contents: [
-        {
-          role: "user",
-          parts: [{ text: message }]
-        }
-      ]
-    });
+    const response = await fetch(
+      "https://api-inference.huggingface.co/models/mistralai/Mistral-7B-Instruct-v0.2",
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${process.env.HF_API_KEY}`,
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          inputs: message
+        })
+      }
+    );
 
-    const reply =
-      result.response.candidates[0].content.parts[0].text;
+    const data = await response.json();
+
+    if (!response.ok) {
+      return res.status(response.status).json({
+        error: data.error || "Hugging Face API error"
+      });
+    }
+
+    const reply = data?.[0]?.generated_text || "No response generated";
 
     res.json({ reply });
 
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: error.message });
+    console.error("Server Error:", error);
+    res.status(500).json({
+      error: error.message || "Internal server error"
+    });
   }
 });
 
