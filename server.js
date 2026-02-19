@@ -15,21 +15,28 @@ app.post("/chat", async (req, res) => {
   try {
     const { message } = req.body;
 
+    // NEW WORKING MODEL NAME
     const model = genAI.getGenerativeModel({
-      model: "gemini-pro"
+      model: "gemini-1.5-flash"
     });
 
-    const result = await model.generateContent(message);
-    const response = await result.response;
-    const text = response.text();
+    const result = await model.generateContent({
+      contents: [
+        {
+          role: "user",
+          parts: [{ text: message }]
+        }
+      ]
+    });
 
-    res.json({ reply: text });
+    const reply =
+      result.response.candidates[0].content.parts[0].text;
+
+    res.json({ reply });
 
   } catch (error) {
     console.error(error);
-    res.status(500).json({
-      error: error.message
-    });
+    res.status(500).json({ error: error.message });
   }
 });
 
