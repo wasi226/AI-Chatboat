@@ -16,7 +16,7 @@ app.post("/chat", async (req, res) => {
     const { message } = req.body;
 
     const model = genAI.getGenerativeModel({
-      model: "gemini-1.5-flash"
+      model: "gemini-1.5-flash-latest"
     });
 
     const result = await model.generateContent(message);
